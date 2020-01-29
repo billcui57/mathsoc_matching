@@ -14,8 +14,25 @@ spreadSheet = client.open("Matching Data")
 
 worksheets = spreadSheet.worksheets()
 
+
+
+
+print("Clearing previous results...\n")
+
+
+for worksheet in worksheets[:-1]:
+    cell_list = worksheet.range("D2:G100")
+    for cell in cell_list:
+        cell.value = ''
+    worksheet.update_cells(cell_list)
+
+
+
+
+
 interviewers = []
 
+print("Reading raw data...\n")
 
 #Reads in all the interviewers
 
@@ -25,6 +42,7 @@ for x in worksheets[:-1]:
             "name": x.cell(2, 1).value,
             "program": x.cell(2, 2).value,
             "pastjobs": x.col_values(3)[1:],
+            "intervieweeTimes": [],
             "interviewees": [],
             "intervieweesStudNumber": [],
             "intervieweesEmail": [],
@@ -43,6 +61,9 @@ for x in worksheets[:-1]:
         }
     )
 
+
+
+print("Assigning expertise values to each interviewer...\n")
 
 # Gives rating to the level of expertise for each interviewer in each skill
 # TODO: Let major affect level too
@@ -78,6 +99,7 @@ for interviewer in interviewers:
      
 
 
+print("Reading interviewees...\n")
 
 #Reads in interviewees
 
@@ -96,6 +118,7 @@ for row in range(1,formSheet.row_count):
             "email": formSheet.cell(row + 1, 2).value,
             "studentNum": int(formSheet.cell(row + 1, 5).value),
             "program ": formSheet.cell(row + 1, 6).value,
+            "time": formSheet.cell(row + 1, 20).value,
             int (formSheet.cell(row + 1, 7).value) : "researchAssistantRate",
             int (formSheet.cell(row + 1, 8).value) : "teacherRate",
             int (formSheet.cell(row + 1, 9).value) : "financialAnalystRate",
@@ -112,9 +135,15 @@ for row in range(1,formSheet.row_count):
     )
     
 
+
+
+print("Matching...\n")
+
 #Max capacity of each interviewer
 #TODO make it more robust
-maxCapacity = len(interviewees) / len(interviewers) + 5
+maxCapacity = int(len(interviewees) / len(interviewers) + 5) 
+
+qualification_threshold = 0
 
 #Algorithm for matching
 for interviewee in interviewees:
@@ -122,10 +151,11 @@ for interviewee in interviewees:
     matchedInterviewer = False
     while True:
         for interviewer in interviewers:
-            if (interviewer[interviewee[desiredJobRank]] > 2) and (len(interviewer["interviewees"])) < maxCapacity:
+            if (interviewer[interviewee[desiredJobRank]] > qualification_threshold) and (len(interviewer["interviewees"])) < maxCapacity:
                 interviewer["interviewees"].append(interviewee["name"])
                 interviewer["intervieweesStudNumber"].append(interviewee["studentNum"])
                 interviewer["intervieweesEmail"].append(interviewee["email"])
+                interviewer["intervieweeTimes"].append(interviewee["time"])
                 matchedInterviewer = True
                 break
             else:
@@ -137,8 +167,12 @@ for interviewee in interviewees:
         else:   
             break
              
-             
-#Pushes changes back
+
+
+#Pushes changes back (overrides and does not appends)
+
+print("Pushing match results...\n")
+
 
 for worksheet in worksheets[:-1]:
     interviewerIndex = worksheets.index(worksheet)
@@ -146,9 +180,9 @@ for worksheet in worksheets[:-1]:
         worksheet.update_cell(row+1,4,interviewers[interviewerIndex]["interviewees"][row-1])
         worksheet.update_cell(row+1,5,interviewers[interviewerIndex]["intervieweesStudNumber"][row-1])
         worksheet.update_cell(row+1,6,interviewers[interviewerIndex]["intervieweesEmail"][row-1])
+        worksheet.update_cell(row+1,7,interviewers[interviewerIndex]["intervieweeTimes"][row-1])
     
 
 
-
-
+print("Done!\n")
 
